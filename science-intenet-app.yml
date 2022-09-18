@@ -1,0 +1,87 @@
+mixed-port: 7890
+
+allow-lan: true
+
+bind-address: "*"
+
+mode: rule
+
+# set log level to stdout (default is info)
+# info / warning / error / debug
+log-level: info
+
+# A RESTful API for clash
+external-controller: 127.0.0.1:9090
+
+# 代理节点
+proxies:
+  - name: science-intenet-app-eu
+    type: vmess
+    server: science-intenet-app-eu.herokuapp.com
+    port: 443
+    uuid: "867be38e-a051-4ba8-bca1-b5bfd4dd2cdb"
+    alterId: 0
+    cipher: auto
+    network: ws
+    ws-opts:
+      path: "/ray"
+      headers: { "Host":"science-intenet-app-eu.herokuapp.com" }
+    tls: true
+
+  - name: science-intenet-app-usa
+    type: vmess
+    server: science-intenet-app-usa.herokuapp.com
+    port: 443
+    uuid: "867be38e-a051-4ba8-bca1-b5bfd4dd2cdb"
+    alterId: 0
+    cipher: auto
+    network: ws
+    ws-opts:
+      path: "/ray"
+      headers: { "Host":"science-intenet-app-usa.herokuapp.com" }
+    tls: true
+
+# 组
+# type 代表这个组的类型，有下面四种情况
+#    select 手动选择，该组在节点列表上，手动选择列表或者 proxy-group
+#    url-test 延迟最低节点，测试该组所有节点的延迟
+#    fallback 回落，连接该组第一个节点，不可用时切换到下一个节点
+#    load-balance 负载均衡，由该组2个以上的节点提供链接
+proxy-groups:
+  - name: Auto
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+    proxies:
+      - science-intenet-app-eu
+      - science-intenet-app-usa
+
+  - name: Proxy
+    type: select
+    proxies:
+      - Auto
+      - science-intenet-app-eu
+      - science-intenet-app-usa
+
+# 规则 = 规则前缀,地址,组名 ([no-resolve] 表示不要解析这条规则，只处理直接 ip 访问请求)
+# 规则前缀
+#   DOMAIN-SUFFIX 表示包含什么后缀的域名
+#   IP-CIDR IPV4匹配
+#   IP-CIDR6 IPV6匹配
+#   DOMAIN-KEYWORD,xxx 表示包含 xxx域名关键字的链接
+#   DOMAIN abc.hello.com 表示包含完整的域名
+#   PROCESS-NAME 表示进程名称
+#   GEOIP 数据库（国家代码）匹配
+#   MATCH 全匹配（一般放在最后）
+rules:
+# LAN
+- IP-CIDR,127.0.0.0/8,DIRECT
+- IP-CIDR,10.0.0.0/8,DIRECT
+- IP-CIDR,17.0.0.0/8,DIRECT
+- IP-CIDR,100.64.0.0/10,DIRECT
+- IP-CIDR,172.16.0.0/12,DIRECT
+- IP-CIDR,192.168.0.0/16,DIRECT
+
+
+- MATCH,Proxy
